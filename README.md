@@ -83,10 +83,18 @@ CACHE:
 ================================================================================
 ```
 
-The log directory is created automatically if it does not exist. The `gc-analysis-logs` named volume in `docker-compose.yml` persists the file across container restarts. To access it from the host:
+The log directory is created automatically if it does not exist. The `gc-analysis-logs` named volume in `docker-compose.yml` persists the file across container restarts.
+
+To copy the log file to the current directory on the host:
 
 ```bash
 docker cp gc-analysis:/app/logs/illegal_differences.log .
+```
+
+To tail it live:
+
+```bash
+docker exec gc-analysis tail -f /app/logs/illegal_differences.log
 ```
 
 ## CLI reference
