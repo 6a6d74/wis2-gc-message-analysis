@@ -1,18 +1,8 @@
 services:
-  redis:
-    image: redis:7-alpine
-    container_name: redis
-    restart: unless-stopped
-    networks:
-      - traefik
-
   gc-analysis:
     build: .
     container_name: gc-analysis
     restart: unless-stopped
-    depends_on:
-      redis:
-        condition: service_started
     # To filter by a specific WIS2 Node, add:
     # command: ["--centre-id", "ca-eccc-msc"]
     networks:

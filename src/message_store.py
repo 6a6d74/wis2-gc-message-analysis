@@ -9,8 +9,8 @@ import redis as redis_lib
 from . import metrics
 from .config import EXPIRY_CHECK_INTERVAL_SECONDS, MESSAGE_EXPIRY_SECONDS
 
-_KEY_PREFIX = "origin:"
-_EXPIRY_ZSET = "expiry_index"
+_KEY_PREFIX = "wis2gc:origin:"
+_EXPIRY_ZSET = "wis2gc:expiry_index"
 
 
 class MessageStore:
