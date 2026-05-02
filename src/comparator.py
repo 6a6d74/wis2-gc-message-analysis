@@ -9,7 +9,9 @@ def _normalize(msg: dict) -> dict:
     m.get("properties", {}).pop("global-cache", None)
     for link in m.get("links", []):
         if link.get("rel") in ("canonical", "update"):
-            link["href"] = "__NORMALIZED__"
+            link.pop("href", None)
+    if "links" in m:
+        m["links"] = sorted(m["links"], key=lambda lnk: lnk.get("rel", ""))
     return m
 
 
