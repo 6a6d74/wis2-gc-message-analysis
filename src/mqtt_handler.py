@@ -168,6 +168,7 @@ class MQTTHandler:
             self._log_illegal_pair(
                 origin=origin_message,
                 cache=payload,
+                diff_text=diff_text,
                 data_id=data_id,
                 pubtime=pubtime,
                 centre_id=centre_id,
@@ -179,6 +180,7 @@ class MQTTHandler:
         self,
         origin: dict,
         cache: dict,
+        diff_text: str,
         data_id: str,
         pubtime: str,
         centre_id: str,
@@ -201,6 +203,9 @@ class MQTTHandler:
                 f.write(f"data-id:                 {data_id}\n")
                 f.write(f"pubtime:                 {pubtime}\n")
                 f.write(f"Arrival time difference: {arrival_diff} seconds\n")
+                f.write(f"{div}\n")
+                f.write("DIFF:\n")
+                f.write(diff_text)
                 f.write(f"{div}\n")
                 f.write("ORIGIN:\n")
                 f.write(json.dumps(origin, indent=2))
