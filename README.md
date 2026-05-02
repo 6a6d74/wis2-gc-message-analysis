@@ -28,7 +28,7 @@ Any other difference is flagged as illegal and printed as a unified diff.
 docker compose up -d
 ```
 
-The `traefik` network must already exist (external).
+Both the `traefik` network and a `redis` container (reachable by hostname `redis` on that network) must already exist before starting this service.
 
 To restrict to a single WIS2 Node, set `command` in `docker-compose.yml`:
 
