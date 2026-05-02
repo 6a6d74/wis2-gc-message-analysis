@@ -5,9 +5,14 @@ services:
     restart: unless-stopped
     # To filter by a specific WIS2 Node, add:
     # command: ["--centre-id", "ca-eccc-msc"]
+    volumes:
+      - gc-analysis-logs:/app/logs
     networks:
       - traefik
 
 networks:
   traefik:
     external: true
+
+volumes:
+  gc-analysis-logs:

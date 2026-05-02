@@ -63,6 +63,32 @@ Add the following scrape job to your `prometheus.yml`:
 | `messages_with_illegal_differences_total` | `centre_id` | Matched pairs with illegal differences |
 | `missed_messages_total` | `centre_id` | Origin messages with no cache match after 600 s |
 
+## Illegal differences log
+
+When a matched pair contains illegal differences the full origin and cache messages are appended to a log file (default `/app/logs/illegal_differences.log`) in the following format:
+
+```
+================================================================================
+Detected:                2026-05-02T14:14:15Z
+centre-id:               de-dwd-gts-to-wis2
+data-id:                 wis2/de-dwd-gts-to-wis2/data/core/...
+pubtime:                 2026-05-02T14:14:12.033446Z
+Arrival time difference: 3 seconds
+--------------------------------------------------------------------------------
+ORIGIN:
+{ ... }
+--------------------------------------------------------------------------------
+CACHE:
+{ ... }
+================================================================================
+```
+
+The log directory is created automatically if it does not exist. The `gc-analysis-logs` named volume in `docker-compose.yml` persists the file across container restarts. To access it from the host:
+
+```bash
+docker cp gc-analysis:/app/logs/illegal_differences.log .
+```
+
 ## CLI reference
 
 ```
@@ -75,3 +101,4 @@ python -m src.main --help
 | `--metrics-port PORT` | `8000` | Prometheus metrics port |
 | `--redis-host HOST` | `redis` | Redis hostname |
 | `--redis-port PORT` | `6379` | Redis port |
+| `--diff-log PATH` | `/app/logs/illegal_differences.log` | Log file for illegal difference pairs |

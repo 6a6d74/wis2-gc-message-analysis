@@ -69,7 +69,7 @@ class MessageStore:
                     print(
                         f"No matching message from cache found after 600 seconds | "
                         f"origin arrival time: {arrival_str} | "
-                        f"data-id: {data_id} | pubtime: {pubtime}",
+                        f"data-id: {data_id} | pubtime: {pubtime} | centre-id: {centre_id}",
                         file=sys.stderr,
                     )
                     metrics.missed_messages.labels(centre_id=centre_id).inc()

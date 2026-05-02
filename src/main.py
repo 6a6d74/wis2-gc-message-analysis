@@ -4,7 +4,7 @@ import sys
 import time
 
 from . import metrics
-from .config import METRICS_PORT, REDIS_HOST, REDIS_PORT
+from .config import DIFF_LOG_PATH, METRICS_PORT, REDIS_HOST, REDIS_PORT
 from .message_store import MessageStore
 from .mqtt_handler import MQTTHandler
 
@@ -66,6 +66,12 @@ def main() -> None:
         metavar="PORT",
         help=f"Redis port (default: {REDIS_PORT}).",
     )
+    parser.add_argument(
+        "--diff-log",
+        default=DIFF_LOG_PATH,
+        metavar="PATH",
+        help=f"Path to append-mode log file for illegal difference pairs (default: {DIFF_LOG_PATH}).",
+    )
     args = parser.parse_args()
 
     metrics.start(args.metrics_port)
@@ -75,7 +81,7 @@ def main() -> None:
     except Exception:
         sys.exit(1)
 
-    handler = MQTTHandler(store=store, centre_id=args.centre_id)
+    handler = MQTTHandler(store=store, centre_id=args.centre_id, diff_log=args.diff_log)
     handler.start()
 
     def _shutdown(signum, frame):

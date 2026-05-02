@@ -1,4 +1,5 @@
 import json
+import os
 import ssl
 import sys
 import time
@@ -8,7 +9,7 @@ from urllib.parse import urlparse
 import paho.mqtt.client as mqtt
 
 from . import comparator, metrics
-from .config import CACHE_BROKER_URL, ORIGIN_BROKER_URL
+from .config import CACHE_BROKER_URL, DIFF_LOG_PATH, ORIGIN_BROKER_URL
 from .message_store import MessageStore
 
 
@@ -30,9 +31,10 @@ def _parse_topic(topic: str) -> dict | None:
 
 
 class MQTTHandler:
-    def __init__(self, store: MessageStore, centre_id: str | None = None) -> None:
+    def __init__(self, store: MessageStore, centre_id: str | None = None, diff_log: str = DIFF_LOG_PATH) -> None:
         self._store = store
         self._centre_id = centre_id
+        self._diff_log = diff_log
 
         if centre_id:
             self._origin_topic = f"origin/a/wis2/{centre_id}/#"
@@ -140,7 +142,7 @@ class MQTTHandler:
             print(
                 f"No matching message from origin found, discarding message from cache | "
                 f"cache arrival time: {arrival_str} | "
-                f"data-id: {data_id} | pubtime: {pubtime}",
+                f"data-id: {data_id} | pubtime: {pubtime} | centre-id: {centre_id}",
                 file=sys.stderr,
             )
             return
@@ -151,8 +153,8 @@ class MQTTHandler:
 
         print(
             f"Matching messages from origin and cache found | "
-            f"arrival time difference: {arrival_diff} | "
-            f"data-id: {data_id} | pubtime: {pubtime}"
+            f"arrival time difference: {arrival_diff} seconds | "
+            f"data-id: {data_id} | pubtime: {pubtime} | centre-id: {centre_id}"
         )
         metrics.matched_messages.labels(centre_id=centre_id).inc()
 
@@ -163,3 +165,48 @@ class MQTTHandler:
             metrics.illegal_differences.labels(centre_id=centre_id).inc()
             print("Messages contain illegal differences")
             print(diff_text)
+            self._log_illegal_pair(
+                origin=origin_message,
+                cache=payload,
+                data_id=data_id,
+                pubtime=pubtime,
+                centre_id=centre_id,
+                origin_arrival=origin_arrival_time,
+                cache_arrival=cache_arrival_time,
+            )
+
+    def _log_illegal_pair(
+        self,
+        origin: dict,
+        cache: dict,
+        data_id: str,
+        pubtime: str,
+        centre_id: str,
+        origin_arrival: float,
+        cache_arrival: float,
+    ) -> None:
+        log_dir = os.path.dirname(self._diff_log)
+        if log_dir:
+            os.makedirs(log_dir, exist_ok=True)
+
+        arrival_diff = int(cache_arrival - origin_arrival)
+        detected = datetime.fromtimestamp(cache_arrival, tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
+        sep = "=" * 80
+        div = "-" * 80
+        try:
+            with open(self._diff_log, "a") as f:
+                f.write(f"{sep}\n")
+                f.write(f"Detected:                {detected}\n")
+                f.write(f"centre-id:               {centre_id}\n")
+                f.write(f"data-id:                 {data_id}\n")
+                f.write(f"pubtime:                 {pubtime}\n")
+                f.write(f"Arrival time difference: {arrival_diff} seconds\n")
+                f.write(f"{div}\n")
+                f.write("ORIGIN:\n")
+                f.write(json.dumps(origin, indent=2))
+                f.write(f"\n{div}\n")
+                f.write("CACHE:\n")
+                f.write(json.dumps(cache, indent=2))
+                f.write(f"\n{sep}\n\n")
+        except OSError as exc:
+            print(f"ERROR: Cannot write to diff log {self._diff_log}: {exc}", file=sys.stderr)
