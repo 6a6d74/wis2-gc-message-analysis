@@ -8,3 +8,4 @@ MESSAGE_EXPIRY_SECONDS = 600
 EXPIRY_CHECK_INTERVAL_SECONDS = 10
 METRICS_PORT = 8000
 DIFF_LOG_PATH = "/app/logs/illegal_differences.log"
+MISSED_LOG_PATH = "/app/logs/missed_messages.log"

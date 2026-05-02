@@ -103,6 +103,35 @@ To tail it live:
 docker exec gc-analysis tail -f /app/logs/illegal_differences.log
 ```
 
+## Missed messages log
+
+When an origin message has no matching cache message after 600 seconds it is appended to `/app/logs/missed_messages.log` (default):
+
+```
+================================================================================
+Detected:            2026-05-02T14:14:15Z
+centre-id:           de-dwd-gts-to-wis2
+data-id:             wis2/de-dwd-gts-to-wis2/data/core/...
+pubtime:             2026-05-02T14:14:12.033446Z
+Origin arrival time: 2026-05-02T14:14:12Z
+--------------------------------------------------------------------------------
+ORIGIN:
+{ ... }
+================================================================================
+```
+
+To copy the log file to the current directory on the host:
+
+```bash
+docker cp gc-analysis:/app/logs/missed_messages.log .
+```
+
+To tail it live:
+
+```bash
+docker exec gc-analysis tail -f /app/logs/missed_messages.log
+```
+
 ## CLI reference
 
 ```
@@ -116,3 +145,4 @@ python -m src.main --help
 | `--redis-host HOST` | `redis` | Redis hostname |
 | `--redis-port PORT` | `6379` | Redis port |
 | `--diff-log PATH` | `/app/logs/illegal_differences.log` | Log file for illegal difference pairs |
+| `--missed-log PATH` | `/app/logs/missed_messages.log` | Log file for missed origin messages |

@@ -4,7 +4,7 @@ import sys
 import time
 
 from . import metrics
-from .config import DIFF_LOG_PATH, METRICS_PORT, REDIS_HOST, REDIS_PORT
+from .config import DIFF_LOG_PATH, METRICS_PORT, MISSED_LOG_PATH, REDIS_HOST, REDIS_PORT
 from .message_store import MessageStore
 from .mqtt_handler import MQTTHandler
 
@@ -72,12 +72,18 @@ def main() -> None:
         metavar="PATH",
         help=f"Path to append-mode log file for illegal difference pairs (default: {DIFF_LOG_PATH}).",
     )
+    parser.add_argument(
+        "--missed-log",
+        default=MISSED_LOG_PATH,
+        metavar="PATH",
+        help=f"Path to append-mode log file for missed origin messages (default: {MISSED_LOG_PATH}).",
+    )
     args = parser.parse_args()
 
     metrics.start(args.metrics_port)
 
     try:
-        store = MessageStore(host=args.redis_host, port=args.redis_port)
+        store = MessageStore(host=args.redis_host, port=args.redis_port, missed_log=args.missed_log)
     except Exception:
         sys.exit(1)
 

@@ -1,4 +1,5 @@
 import json
+import os
 import sys
 import threading
 import time
@@ -7,15 +8,16 @@ from datetime import datetime, timezone
 import redis as redis_lib
 
 from . import metrics
-from .config import EXPIRY_CHECK_INTERVAL_SECONDS, MESSAGE_EXPIRY_SECONDS
+from .config import EXPIRY_CHECK_INTERVAL_SECONDS, MESSAGE_EXPIRY_SECONDS, MISSED_LOG_PATH
 
 _KEY_PREFIX = "wis2gc:origin:"
 _EXPIRY_ZSET = "wis2gc:expiry_index"
 
 
 class MessageStore:
-    def __init__(self, host: str, port: int) -> None:
+    def __init__(self, host: str, port: int, missed_log: str = MISSED_LOG_PATH) -> None:
         self._redis = redis_lib.Redis(host=host, port=port, decode_responses=True)
+        self._missed_log = missed_log
         self._check_connection()
         self._start_expiry_worker()
 
@@ -73,8 +75,40 @@ class MessageStore:
                         file=sys.stderr,
                     )
                     metrics.missed_messages.labels(centre_id=centre_id).inc()
+                    self._log_missed_message(
+                        message=payload["message"],
+                        arrival_time=payload["arrival_time"],
+                        centre_id=centre_id,
+                    )
             except Exception as exc:
                 print(f"ERROR in expiry worker: {exc}", file=sys.stderr)
+
+    def _log_missed_message(self, message: dict, arrival_time: float, centre_id: str) -> None:
+        log_dir = os.path.dirname(self._missed_log)
+        if log_dir:
+            os.makedirs(log_dir, exist_ok=True)
+
+        props = message.get("properties", {})
+        data_id = props.get("data_id", "unknown")
+        pubtime = props.get("pubtime", "unknown")
+        detected = datetime.fromtimestamp(time.time(), tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
+        arrival_str = datetime.fromtimestamp(arrival_time, tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
+        sep = "=" * 80
+        div = "-" * 80
+        try:
+            with open(self._missed_log, "a") as f:
+                f.write(f"{sep}\n")
+                f.write(f"Detected:            {detected}\n")
+                f.write(f"centre-id:           {centre_id}\n")
+                f.write(f"data-id:             {data_id}\n")
+                f.write(f"pubtime:             {pubtime}\n")
+                f.write(f"Origin arrival time: {arrival_str}\n")
+                f.write(f"{div}\n")
+                f.write("ORIGIN:\n")
+                f.write(json.dumps(message, indent=2))
+                f.write(f"\n{sep}\n\n")
+        except OSError as exc:
+            print(f"ERROR: Cannot write to missed messages log {self._missed_log}: {exc}", file=sys.stderr)
 
     def _start_expiry_worker(self) -> None:
         thread = threading.Thread(target=self._expiry_worker, daemon=True, name="expiry-worker")
